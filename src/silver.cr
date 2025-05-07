@@ -26,6 +26,7 @@ end
 
 alias Handler = Context -> HttpResponse
 
+# The context for some request.
 class Context
     getter request : HttpRequest
     getter path : String
@@ -35,9 +36,11 @@ class Context
     end
 end
 
+# The control-point of the application.
+# Includes caching and server-run mechanisms.
 class Router
     getter routes : Hash(String, Handler) = Hash(String, Handler).new
-    @cache = Hash(String, Tuple(HttpResponse, Time)).new # CACHING
+    @cache = Hash(String, Tuple(HttpResponse, Time)).new
 
     def add_route(path : String, &block : Handler)
         routes[path] = block
