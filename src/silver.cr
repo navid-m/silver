@@ -37,6 +37,7 @@ end
 
 class Router
     getter routes : Hash(String, Handler) = Hash(String, Handler).new
+    @cache = Hash(String, Tuple(HttpResponse, Time)).new # CACHING
 
     def add_route(path : String, &block : Handler)
         routes[path] = block
@@ -46,7 +47,61 @@ class Router
         routes[path]?
     end
 
-    def create_request(reader : IO) : Tuple(HttpRequest?, Bool)
+    def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
+        if handler = self.find_handler(req.path)
+            response = handler.call(Context.new(req))
+            return {response, nil}
+        end
+
+        file_path = ROOT + req.path
+
+        if cache_entry = @cache[req.path]?
+            begin
+                stat = File.info(file_path)
+                cached_mtime = cache_entry[1]
+
+                if stat.modification_time == cached_mtime
+                    return {cache_entry[0], nil}
+                end
+            rescue
+                @cache.delete(req.path)
+            end
+        end
+
+        response = empty_response()
+        response.status = 200
+
+        begin
+            file = File.open(file_path, "r")
+
+            if File.directory?(file_path)
+                file.close
+                req.path += "/index.html"
+                return create_response(req)
+            end
+
+            file_stat       = File.info(file_path)
+            content_length  = file_stat.size
+            mime            = extension_to_mime(File.extname(file_path))
+            last_modified   = file_stat.modification_time
+            data            = file.getb_to_end
+
+            file.close
+
+            response.data           = data
+            response.content_length = content_length
+            response.mime           = mime
+            response.last_modified  = last_modified
+
+            @cache[req.path] = {response, last_modified}
+            return {response, nil}
+        rescue e
+            Log.info { "404 [#{e.message}]" }
+            return {create_error_404, nil}
+        end
+    end
+
+    def create_request(reader : TCPSocket) : Tuple(HttpRequest?, Bool)
         begin
             first_line = reader.gets || ""
             return {nil, false} if first_line.empty?
@@ -97,33 +152,6 @@ class Router
         rescue e
             Log.error { "Error writing response: #{e.message}" }
             return false
-        end
-    end
-
-    def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
-        response = empty_response()
-        response.status = 200
-
-        begin
-            file_path = ROOT + req.path
-            file = File.open(file_path, "r")
-
-            if File.directory?(file_path)
-                file.close
-                req.path += "/index.html"
-                return create_response(req)
-            end
-
-            response.reader = file
-            file_stat = File.info(file_path)
-            response.content_length = file_stat.size
-            response.last_modified = file_stat.modification_time
-            response.mime = extension_to_mime(File.extname(file_path))
-
-            return {response, file}
-        rescue e
-            Log.info { "404 [#{e.message}]" }
-            return {create_error_404, nil}
         end
     end
 
