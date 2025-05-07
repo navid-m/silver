@@ -1,0 +1,22 @@
+name: Prismic
+version: 0.1.0
+targets:
+   prismic:
+       main:
+           src/example.cr
+# authors:
+#   - name <email@example.com>
+
+# description: |
+#   Short description of Prismic
+
+# dependencies:
+#   pg:
+#     github: will/crystal-pg
+#     version: "~> 0.5"
+
+# development_dependencies:
+#   webmock:
+#     github: manastech/webmock.cr
+
+# license: MIT

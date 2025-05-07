@@ -1,0 +1,7 @@
+bin
+*.exe
+*.pdb
+*.dll
+*.a
+*.so
+*.out
