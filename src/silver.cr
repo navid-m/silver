@@ -75,7 +75,7 @@ class Router
             first_line = "HTTP/1.1 #{res.status} #{http_code_to_status(res.status)}\r\n"
             headers    = "Date: #{res.date.to_rfc2822}\r\n"
 
-            headers += "Server: CrystalAwesomeServer/1.0\r\n"
+            headers += "Server: Silver/1.0\r\n"
             headers += "Content-Type: #{res.mime};\r\n"
             headers += "Content-Length: #{res.content_length}\r\n"
             headers += "Connection: #{keep_alive ? "keep-alive" : "close"}\r\n"
@@ -213,8 +213,7 @@ class Router
         end
     end
 
-    def run(port : Int)
-        address = "0.0.0.0"
+    def run(port : Int, address : String = "0.0.0.0")
         server = TCPServer.new(address, port)
 
         Log.info { "Server is running on #{address}:#{port}" }

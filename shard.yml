@@ -1,9 +1,9 @@
 name: Prismic
 version: 0.1.0
 targets:
-   prismic:
+   example_app:
        main:
-           src/prismic.cr
+           src/example.cr
 # authors:
 #   - name <email@example.com>
 
