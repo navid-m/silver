@@ -106,7 +106,7 @@ class Router
 
         begin
             file_path = ROOT + req.path
-            file = File.open(file_path)
+            file = File.open(file_path, "r")
 
             if File.directory?(file_path)
                 file.close
@@ -154,14 +154,14 @@ class Router
 
     def connection_handler(client : TCPSocket)
         remote_addr = client.remote_address
-        Log.info { "new connection from [#{remote_addr}]" }
+        # Log.info { "new connection from [#{remote_addr}]" }
 
         begin
             loop do
                 request, keep_alive = create_request(client)
 
                 if request.nil?
-                    Log.info { "400: Bad Request" }
+                    # Log.info { "400: Bad Request" }
                     write_response(create_error_400(), client, false)
                     break
                 end
@@ -176,14 +176,13 @@ class Router
             Log.error { "Error handling connection: #{e.message}" }
         ensure
             client.close
-            Log.info { "connection from [#{remote_addr}] closed" }
+            # Log.info { "connection from [#{remote_addr}] closed" }
         end
     end
 
     def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
         if handler = self.find_handler(req.path)
-            ctx = Context.new(req)
-            response = handler.call(ctx)
+            response = handler.call(Context.new(req))
             return {response, nil}
         end
 
@@ -205,7 +204,6 @@ class Router
             response.content_length = file_stat.size
             response.last_modified = file_stat.modification_time
             response.mime = extension_to_mime(File.extname(file_path))
-
             return {response, file}
         rescue e
             Log.info { "404 [#{e.message}]" }
@@ -219,8 +217,17 @@ class Router
         Log.info { "Server is running on #{address}:#{port}" }
 
         begin
+            semaphore = Channel(Nil).new(1000)
+
             while client = server.accept?
-                spawn connection_handler(client)
+                spawn do
+                    semaphore.send(nil) # acquire
+                    begin
+                        connection_handler(client)
+                    ensure
+                        semaphore.receive # release
+                    end
+                end
             end
         rescue e : Exception
             Log.error { CANNOT_OPEN_PORT_MSG }
