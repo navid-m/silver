@@ -3,7 +3,7 @@ version: 0.1.0
 targets:
    prismic:
        main:
-           src/example.cr
+           src/prismic.cr
 # authors:
 #   - name <email@example.com>
 
