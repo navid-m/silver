@@ -4,6 +4,7 @@ require "http"
 require "regex"
 require "file"
 require "log"
+require "json"
 require "path"
 require "mime"
 require "../src/mappings"
@@ -35,6 +36,28 @@ module Silver
 
         def initialize(@request : HttpRequest)
             @path = request.path
+        end
+
+        def query_params : Hash(String, String)
+            params = Hash(String, String).new
+            if path.includes?("?")
+                path.split("?")[1].split("&").each do |param|
+                    if param.includes?("=")
+                        key, value = param.split("=", 2)
+                        params[key] = URI.decode(value)
+                    end
+                end
+            end
+            params
+        end
+
+        def query(name : String) : String?
+            query_params[name]?
+        end
+
+        # TODO : IMPLEMENT
+        def param(name : String) : String?
+            nil
         end
     end
 
@@ -218,6 +241,69 @@ module Silver
             end
         end
 
+        def get(path : String, &block : Context -> String | Hash(String, String) | Array(String))
+            add_route(path) do |ctx|
+                response = empty_response()
+                result = block.call(ctx)
+                case result
+                when String
+                    if result.starts_with?("<") && (result.includes?("<html"))
+                        response.mime = "text/html"
+                    else
+                        if result.starts_with?("{") && result.ends_with?("}") ||
+                           result.starts_with?("[") && result.ends_with?("]")
+                            response.mime = "application/json"
+                        else
+                            response.mime = "text/plain"
+                        end
+                    end
+                    response.data = result.to_slice
+                when Hash, NamedTuple, Array
+                    response.mime = "application/json"
+                    response.data = result.to_json.to_slice
+                end
+                response.content_length = response.data.not_nil!.size.to_i64
+                response
+            end
+        end
+
+        # TODO : IMPLEMENT
+        def post(path : String, &block : Context -> String | Hash | NamedTuple | Array)
+            get(path, &block)
+        end
+
+        def put(path : String, &block : Context -> String | Hash | NamedTuple | Array)
+            get(path, &block)
+        end
+
+        def delete(path : String, &block : Context -> String | Hash | NamedTuple | Array)
+            get(path, &block)
+        end
+
+        # Helper method for JSON responses
+        def json(path : String, &block : Context -> Hash | NamedTuple | Array)
+            add_route(path) do |ctx|
+                response = empty_response()
+                result = block.call(ctx)
+                json_data = result.to_json
+                response.mime = "application/json"
+                response.data = json_data.to_slice
+                response.content_length = json_data.bytesize.to_i64
+                response
+            end
+        end
+
+        def html(path : String, &block : Context -> String)
+            add_route(path) do |ctx|
+                response = empty_response()
+                result = block.call(ctx)
+                response.mime = "text/html"
+                response.data = result.to_slice
+                response.content_length = result.bytesize.to_i64
+                response
+            end
+        end
+
         def run(port : Int, address : String = "0.0.0.0")
             server = TCPServer.new(address, port)
 
@@ -228,11 +314,11 @@ module Silver
 
                 while client = server.accept?
                     spawn do
-                        semaphore.send(nil) # acquire
+                        semaphore.send(nil)
                         begin
                             connection_handler(client)
                         ensure
-                            semaphore.receive # release
+                            semaphore.receive
                         end
                     end
                 end
@@ -244,24 +330,24 @@ module Silver
             end
         end
     end
+end
 
-    class HttpResponse
-        property status : Int32
-        property date : Time
-        property content_length : Int64
-        property data : Bytes?
-        property reader : IO?
-        property last_modified : Time?
-        property mime : String
+class HttpResponse
+    property status : Int32
+    property date : Time
+    property content_length : Int64
+    property data : Bytes?
+    property reader : IO?
+    property last_modified : Time?
+    property mime : String
 
-        def initialize
-            @status = 200
-            @date = Time.utc
-            @content_length = 0_i64
-            @data = nil
-            @reader = nil
-            @last_modified = nil
-            @mime = extension_to_mime(".txt")
-        end
+    def initialize
+        @status = 200
+        @date = Time.utc
+        @content_length = 0_i64
+        @data = nil
+        @reader = nil
+        @last_modified = nil
+        @mime = extension_to_mime(".txt")
     end
 end
