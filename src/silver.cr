@@ -44,10 +44,13 @@ module Silver
         getter routes : Hash(String, Handler) = Hash(String, Handler).new
         @cache = Hash(String, Tuple(HttpResponse, Time)).new
 
+        # Add some route to the route list
         def add_route(path : String, &block : Handler)
             routes[path] = block
         end
 
+        # Find a handler given a route, the path may be invalid and this
+        # is accounted for.
         def find_handler(path : String) : Handler?
             routes[path]?
         end
@@ -106,6 +109,8 @@ module Silver
             end
         end
 
+        # Create some request
+        # Returns a tuple of the request itself and the status of keep-alive as bool
         def create_request(reader : TCPSocket) : Tuple(HttpRequest?, Bool)
             begin
                 first_line = reader.gets || ""
