@@ -1,14 +1,11 @@
-name: Prismic
+name: Silver
+description: "Gods web framework"
 version: 0.1.0
 targets:
    example_app:
-       main:
-           src/example.cr
+      main: src/example.cr
 # authors:
 #   - name <email@example.com>
-
-# description: |
-#   Short description of Prismic
 
 # dependencies:
 #   pg:
@@ -19,4 +16,3 @@ targets:
 #   webmock:
 #     github: manastech/webmock.cr
 
-# license: MIT
