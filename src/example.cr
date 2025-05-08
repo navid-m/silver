@@ -1,7 +1,7 @@
 require "../src/silver"
 
 port = 8082
-router = Router.new
+router = Silver::Router.new
 
 # router.add_route("/") do |ctx|
 #     res = HttpResponse.new
@@ -13,7 +13,7 @@ router = Router.new
 # end
 
 router.add_route("/") do |ctx|
-    res = HttpResponse.new
+    res = Silver::HttpResponse.new
     body = %({"message": "hello world"})
     res.mime = "application/json"
     res.data = body.to_slice
