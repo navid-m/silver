@@ -258,7 +258,6 @@ module Silver
             end
         end
 
-        # TODO : IMPLEMENT
         def json(method : Method, path : String, &block : Context -> String)
             add_route(method, path) do |ctx|
                 response = empty_response()
