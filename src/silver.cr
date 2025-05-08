@@ -18,12 +18,29 @@ module Silver
     BAD_REQ_MSG          = "400 Bad Request\r\n"
     HEADER_REGEX_1       = /^(GET) (\/[\w\.\/]*) HTTP\/\d\.\d$/
 
+    enum Method
+        GET
+        POST
+        PUT
+        DELETE
+    end
+
     # Some request.
     class HttpRequest
         property method : String
         property path : String
 
         def initialize(@method : String, @path : String)
+        end
+
+        def method_enum : Method
+            case @method
+            when "GET"    then Method::GET
+            when "POST"   then Method::POST
+            when "PUT"    then Method::PUT
+            when "DELETE" then Method::DELETE
+            else               Method::GET
+            end
         end
     end
 
@@ -64,22 +81,22 @@ module Silver
     # The control-point of the application.
     # Includes caching and server-run mechanisms.
     class App
-        getter routes : Hash(String, Handler) = Hash(String, Handler).new
+        getter routes : Hash(Tuple(Method, String), Handler) = Hash(Tuple(Method, String), Handler).new
         @cache = Hash(String, Tuple(HttpResponse, Time)).new
 
         # Add some route to the route list
-        def add_route(path : String, &block : Handler)
-            routes[path] = block
+        def add_route(method : Method, path : String, &block : Handler)
+            routes[{method, path}] = block
         end
 
         # Find a handler given a route, the path may be invalid and this
         # is accounted for.
-        def find_handler(path : String) : Handler?
-            routes[path]?
+        def find_handler(req : HttpRequest) : Handler?
+            routes[{req.method_enum, req.path}]?
         end
 
         def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
-            if handler = self.find_handler(req.path)
+            if handler = self.find_handler(req)
                 response = handler.call(Context.new(req))
                 return {response, nil}
             end
@@ -241,60 +258,20 @@ module Silver
             end
         end
 
-        def get(path : String, &block : Context -> String | Hash(String, String) | Array(String))
-            add_route(path) do |ctx|
-                response = empty_response()
-                result = block.call(ctx)
-                case result
-                when String
-                    if result.starts_with?("<") && (result.includes?("<html"))
-                        response.mime = "text/html"
-                    else
-                        if result.starts_with?("{") && result.ends_with?("}") ||
-                           result.starts_with?("[") && result.ends_with?("]")
-                            response.mime = "application/json"
-                        else
-                            response.mime = "text/plain"
-                        end
-                    end
-                    response.data = result.to_slice
-                when Hash, NamedTuple, Array
-                    response.mime = "application/json"
-                    response.data = result.to_json.to_slice
-                end
-                response.content_length = response.data.not_nil!.size.to_i64
-                response
-            end
-        end
-
         # TODO : IMPLEMENT
-        def post(path : String, &block : Context -> String | Hash | NamedTuple | Array)
-            get(path, &block)
-        end
-
-        def put(path : String, &block : Context -> String | Hash | NamedTuple | Array)
-            get(path, &block)
-        end
-
-        def delete(path : String, &block : Context -> String | Hash | NamedTuple | Array)
-            get(path, &block)
-        end
-
-        # Helper method for JSON responses
-        def json(path : String, &block : Context -> Hash | NamedTuple | Array)
-            add_route(path) do |ctx|
+        def json(method : Method, path : String, &block : Context -> String)
+            add_route(method, path) do |ctx|
                 response = empty_response()
                 result = block.call(ctx)
-                json_data = result.to_json
                 response.mime = "application/json"
-                response.data = json_data.to_slice
-                response.content_length = json_data.bytesize.to_i64
+                response.data = result.to_slice
+                response.content_length = result.bytesize.to_i64
                 response
             end
         end
 
-        def html(path : String, &block : Context -> String)
-            add_route(path) do |ctx|
+        def html(method : Method, path : String, &block : Context -> String)
+            add_route(method, path) do |ctx|
                 response = empty_response()
                 result = block.call(ctx)
                 response.mime = "text/html"
