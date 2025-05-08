@@ -16,7 +16,7 @@ module Silver
     CANNOT_OPEN_PORT_MSG = "cannot connect to specified port\n"
     NOT_FOUND_MSG        = "404 Not Found\r\n"
     BAD_REQ_MSG          = "400 Bad Request\r\n"
-    HEADER_REGEX_1       = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*) HTTP\/\d\.\d$/
+    HEADER_REGEX         = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*) HTTP\/\d\.\d$/
 
     enum Method
         GET
@@ -162,7 +162,7 @@ module Silver
                 first_line = reader.gets || ""
                 return {nil, false} if first_line.empty?
 
-                match = first_line.match(HEADER_REGEX_1)
+                match = first_line.match(HEADER_REGEX)
                 return {nil, false} if match.nil?
 
                 method = match[1]
