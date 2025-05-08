@@ -17,6 +17,7 @@ module Silver
     BAD_REQ_MSG          = "400 Bad Request\r\n"
     HEADER_REGEX_1       = /^(GET) (\/[\w\.\/]*) HTTP\/\d\.\d$/
 
+    # Some request.
     class HttpRequest
         property method : String
         property path : String
