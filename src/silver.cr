@@ -83,18 +83,18 @@ class Router
                 return create_response(req)
             end
 
-            file_stat       = File.info(file_path)
-            content_length  = file_stat.size
-            mime            = extension_to_mime(File.extname(file_path))
-            last_modified   = file_stat.modification_time
-            data            = file.getb_to_end
+            file_stat = File.info(file_path)
+            content_length = file_stat.size
+            mime = extension_to_mime(File.extname(file_path))
+            last_modified = file_stat.modification_time
+            data = file.getb_to_end
 
             file.close
 
-            response.data           = data
+            response.data = data
             response.content_length = content_length
-            response.mime           = mime
-            response.last_modified  = last_modified
+            response.mime = mime
+            response.last_modified = last_modified
 
             @cache[req.path] = {response, last_modified}
             return {response, nil}
@@ -131,7 +131,7 @@ class Router
     def write_response(res : HttpResponse, socket : TCPSocket, keep_alive : Bool) : Bool
         begin
             first_line = "HTTP/1.1 #{res.status} #{http_code_to_status(res.status)}\r\n"
-            headers    = "Date: #{res.date.to_rfc2822}\r\n"
+            headers = "Date: #{res.date.to_rfc2822}\r\n"
 
             headers += "Server: Silver/1.0\r\n"
             headers += "Content-Type: #{res.mime};\r\n"
@@ -207,38 +207,7 @@ class Router
             Log.error { "Error handling connection: #{e.message}" }
         ensure
             client.close
-            # Log.info { "connection from [#{remote_addr}] closed" }
-        end
-    end
-
-    def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
-        if handler = self.find_handler(req.path)
-            response = handler.call(Context.new(req))
-            return {response, nil}
-        end
-
-        response = empty_response()
-        response.status = 200
-
-        begin
-            file_path = ROOT + req.path
-            file = File.open(file_path)
-
-            if File.directory?(file_path)
-                file.close
-                req.path += "/index.html"
-                return create_response(req)
-            end
-
-            response.reader = file
-            file_stat = File.info(file_path)
-            response.content_length = file_stat.size
-            response.last_modified = file_stat.modification_time
-            response.mime = extension_to_mime(File.extname(file_path))
-            return {response, file}
-        rescue e
-            Log.info { "404 [#{e.message}]" }
-            return {create_error_404, nil}
+          # Log.info { "connection from [#{remote_addr}] closed" }
         end
     end
 
