@@ -1,15 +1,14 @@
 require "../src/silver"
 
 port = 8082
-router = Silver::Router.new
-router = Silver::Router.new
+app = Silver::App.new
 
-router.html "/" do |ctx|
+app.html "/" do |ctx|
     "<h1>Hello from Silver Web Framework</h1>"
 end
 
-router.get "/json" do |ctx|
+app.get "/json" do |ctx|
     %({"message": "hello world"})
 end
 
-router.run(port)
+app.run(port)

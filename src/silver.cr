@@ -63,7 +63,7 @@ module Silver
 
     # The control-point of the application.
     # Includes caching and server-run mechanisms.
-    class Router
+    class App
         getter routes : Hash(String, Handler) = Hash(String, Handler).new
         @cache = Hash(String, Tuple(HttpResponse, Time)).new
 
