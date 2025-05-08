@@ -73,8 +73,12 @@ module Silver
             query_params[name]?
         end
 
-        # TODO : IMPLEMENT
         def param(name : String) : String?
+            return nil unless request.body
+            request.body.to_s.split("&").each do |pair|
+                key, val = pair.split("=", 2)
+                return URI.decode(val) if key == name
+            end
             nil
         end
     end
