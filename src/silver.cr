@@ -16,7 +16,7 @@ module Silver
     CANNOT_OPEN_PORT_MSG = "cannot connect to specified port\n"
     NOT_FOUND_MSG        = "404 Not Found\r\n"
     BAD_REQ_MSG          = "400 Bad Request\r\n"
-    HEADER_REGEX_1       = /^(GET) (\/[\w\.\/]*) HTTP\/\d\.\d$/
+    HEADER_REGEX_1       = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*) HTTP\/\d\.\d$/
 
     enum Method
         GET
@@ -29,8 +29,9 @@ module Silver
     class HttpRequest
         property method : String
         property path : String
+        property body : String?
 
-        def initialize(@method : String, @path : String)
+        def initialize(@method : String, @path : String, @body : String? = nil)
         end
 
         def method_enum : Method
@@ -163,13 +164,22 @@ module Silver
                 method = match[1]
                 path = match[2]
                 keep_alive = false
+                content_length = 0
 
                 while (line = reader.gets)
                     break if line.strip.empty?
                     keep_alive ||= line.downcase.includes?("connection: keep-alive")
+                    if line.downcase.starts_with?("content-length:")
+                        content_length = line.split(":")[1].strip.to_i
+                    end
                 end
 
-                return {HttpRequest.new(method, path), keep_alive}
+                body = nil
+                if method == "POST" && content_length > 0
+                    body = reader.read_string(content_length)
+                end
+
+                return {HttpRequest.new(method, path, body), keep_alive}
             rescue e
                 Log.error { e.message }
                 return {nil, false}

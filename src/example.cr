@@ -11,4 +11,10 @@ app.json(Silver::Method::GET, "/json") do |ctx|
     %({"message": "hello world"})
 end
 
+app.json(Silver::Method::POST, "/echo") do |ctx|
+    Log.info { "Body: #{ctx.request.body.inspect}" }
+    body = ctx.request.body || ""
+    %({"received": #{body.to_json}})
+end
+
 app.run(port)
