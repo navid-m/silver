@@ -95,6 +95,7 @@ module Silver
             routes[{req.method_enum, req.path}]?
         end
 
+        # Create a response corresponding to a HTTP request.
         def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
             if handler = self.find_handler(req)
                 response = handler.call(Context.new(req))
