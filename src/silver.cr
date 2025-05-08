@@ -247,14 +247,11 @@ module Silver
 
         def connection_handler(client : TCPSocket)
             remote_addr = client.remote_address
-            # Log.info { "new connection from [#{remote_addr}]" }
-
             begin
                 loop do
                     request, keep_alive = create_request(client)
 
                     if request.nil?
-                        # Log.info { "400: Bad Request" }
                         write_response(create_error_400(), client, false)
                         break
                     end
@@ -262,14 +259,12 @@ module Silver
                     response, file = create_response(request)
                     write_response(response, client, keep_alive)
                     file.try &.close
-
                     break unless keep_alive
                 end
             rescue e
                 Log.error { "Error handling connection: #{e.message}" }
             ensure
                 client.close
-              # Log.info { "connection from [#{remote_addr}] closed" }
             end
         end
 
