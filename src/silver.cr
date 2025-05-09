@@ -16,7 +16,7 @@ module Silver
     CANNOT_OPEN_PORT_MSG = "cannot connect to specified port\n"
     NOT_FOUND_MSG        = "404 Not Found\r\n"
     BAD_REQ_MSG          = "400 Bad Request\r\n"
-    HEADER_REGEX         = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*) HTTP\/\d\.\d$/
+    HEADER_REGEX         = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*(?:\?[\w\.\=\&\%\+\-]*)*) HTTP\/\d\.\d$/
 
     enum Method
         GET
@@ -62,7 +62,7 @@ module Silver
                 path.split("?")[1].split("&").each do |param|
                     if param.includes?("=")
                         key, value = param.split("=", 2)
-                        params[key] = URI.decode(value)
+                        params[URI.decode_www_form(key)] = URI.decode_www_form(value)
                     end
                 end
             end
@@ -97,7 +97,8 @@ module Silver
         # Find a handler given a route, the path may be invalid and this
         # is accounted for.
         def find_handler(req : HttpRequest) : Handler?
-            routes[{req.method_enum, req.path}]?
+            base_path = req.path.includes?("?") ? req.path.split("?")[0] : req.path
+            routes[{req.method_enum, base_path}]?
         end
 
         # Create a response corresponding to a HTTP request.
