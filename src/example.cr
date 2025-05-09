@@ -11,6 +11,11 @@ app.json(Silver::Method::GET, "/json") do |ctx|
     %({"message": "hello world"})
 end
 
+app.html(Silver::Method::GET, "/greet/:name") do |ctx|
+    name = ctx.param("name") || "stranger"
+    "<h1>Hello, #{name}!</h1>"
+end
+
 app.json(Silver::Method::POST, "/echo") do |ctx|
     Log.info { "Body: #{ctx.request.body.inspect}" }
     body = ctx.request.body || ""

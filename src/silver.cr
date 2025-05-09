@@ -25,6 +25,44 @@ module Silver
         DELETE
     end
 
+    # Some route for the router (router logic encapsulated in App class)
+    class Route
+        getter pattern : String
+        getter param_names : Array(String)
+        getter regex : Regex
+
+        def initialize(@pattern : String)
+            @param_names = [] of String
+            @regex = compile_route_regex
+        end
+
+        private def compile_route_regex : Regex
+            parts = [] of String
+            @pattern.split("/").each do |part|
+                if part.starts_with?(":")
+                    param_name = part[1..]
+                    @param_names << param_name
+                    parts << "([^/]+)"
+                else
+                    parts << Regex.escape(part)
+                end
+            end
+            pattern_str = "^" + parts.join("/") + "$"
+            Regex.new(pattern_str)
+        end
+
+        def match(path : String) : Hash(String, String)?
+            match_data = @regex.match(path)
+            return nil unless match_data
+            params = Hash(String, String).new
+            @param_names.each_with_index do |name, i|
+                params[name] = match_data[i + 1]
+            end
+
+            params
+        end
+    end
+
     # Some request.
     class HttpRequest
         property method : String
@@ -51,8 +89,9 @@ module Silver
     class Context
         getter request : HttpRequest
         getter path : String
+        getter params : Hash(String, String)
 
-        def initialize(@request : HttpRequest)
+        def initialize(@request : HttpRequest, @params = Hash(String, String).new)
             @path = request.path
         end
 
@@ -74,6 +113,7 @@ module Silver
         end
 
         def param(name : String) : String?
+            return @params[name]? if @params.has_key?(name)
             return nil unless request.body
             request.body.to_s.split("&").each do |pair|
                 key, val = pair.split("=", 2)
@@ -86,25 +126,34 @@ module Silver
     # The control-point of the application.
     # Includes caching and server-run mechanisms.
     class App
-        getter routes : Hash(Tuple(Method, String), Handler) = Hash(Tuple(Method, String), Handler).new
+        getter routes : Array(Tuple(Method, Route, Handler)) = [] of Tuple(Method, Route, Handler)
         @cache = Hash(String, Tuple(HttpResponse, Time)).new
 
         # Add some route to the route list
         def add_route(method : Method, path : String, &block : Handler)
-            routes[{method, path}] = block
+            route = Route.new(path)
+            routes << {method, route, block}
         end
 
-        # Find a handler given a route, the path may be invalid and this
-        # is accounted for.
-        def find_handler(req : HttpRequest) : Handler?
+        # Find a handler given a request, accounting for path parameters
+        def find_handler(req : HttpRequest) : Tuple(Handler, Hash(String, String))?
             base_path = req.path.includes?("?") ? req.path.split("?")[0] : req.path
-            routes[{req.method_enum, base_path}]?
+            routes.each do |method, route, handler|
+                next unless method == req.method_enum
+
+                if params = route.match(base_path)
+                    return {handler, params}
+                end
+            end
+
+            nil
         end
 
         # Create a response corresponding to a HTTP request.
         def create_response(req : HttpRequest) : Tuple(HttpResponse, File?)
-            if handler = self.find_handler(req)
-                response = handler.call(Context.new(req))
+            if handler_tuple = self.find_handler(req)
+                handler, params = handler_tuple
+                response = handler.call(Context.new(req, params))
                 return {response, nil}
             end
 
