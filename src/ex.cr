@@ -24,9 +24,4 @@ app.json(Silver::Method::POST, "/echo") do |ctx|
     %({"received": #{body.to_json}})
 end
 
-app.html(Silver::Method::GET, "/") do |ctx|
-    query = ctx.query("q") || "no query parameter"
-    "<h1>Hello from Silver Web Framework</h1><p>Query parameter 'q': #{query}</p>"
-end
-
 app.run(port)
