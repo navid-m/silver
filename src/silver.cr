@@ -8,6 +8,8 @@ require "json"
 require "path"
 require "mime"
 require "../src/mappings"
+require "../src/http"
+require "../src/routing"
 
 module Silver
     DEFAULT_PORT         = 8082
@@ -16,72 +18,6 @@ module Silver
     CANNOT_OPEN_PORT_MSG = "cannot connect to specified port\n"
     NOT_FOUND_MSG        = "404 Not Found\r\n"
     BAD_REQ_MSG          = "400 Bad Request\r\n"
-    HEADER_REGEX         = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*(?:\?[\w\.\=\&\%\+\-]*)*) HTTP\/\d\.\d$/
-
-    enum Method
-        GET
-        POST
-        PUT
-        DELETE
-    end
-
-    # Some route for the router (router logic encapsulated in App class)
-    class Route
-        getter pattern : String
-        getter param_names : Array(String)
-        getter regex : Regex
-
-        def initialize(@pattern : String)
-            @param_names = [] of String
-            @regex = compile_route_regex
-        end
-
-        private def compile_route_regex : Regex
-            parts = [] of String
-            @pattern.split("/").each do |part|
-                if part.starts_with?(":")
-                    param_name = part[1..]
-                    @param_names << param_name
-                    parts << "([^/]+)"
-                else
-                    parts << Regex.escape(part)
-                end
-            end
-            pattern_str = "^" + parts.join("/") + "$"
-            Regex.new(pattern_str)
-        end
-
-        def match(path : String) : Hash(String, String)?
-            match_data = @regex.match(path)
-            return nil unless match_data
-            params = Hash(String, String).new
-            @param_names.each_with_index do |name, i|
-                params[name] = match_data[i + 1]
-            end
-
-            params
-        end
-    end
-
-    # Some request.
-    class HttpRequest
-        property method : String
-        property path : String
-        property body : String?
-
-        def initialize(@method : String, @path : String, @body : String? = nil)
-        end
-
-        def method_enum : Method
-            case @method
-            when "GET"    then Method::GET
-            when "POST"   then Method::POST
-            when "PUT"    then Method::PUT
-            when "DELETE" then Method::DELETE
-            else               Method::GET
-            end
-        end
-    end
 
     alias Handler = Context -> HttpResponse
 
@@ -365,25 +301,5 @@ module Silver
                 server.close if server
             end
         end
-    end
-end
-
-class HttpResponse
-    property status : Int32
-    property date : Time
-    property content_length : Int64
-    property data : Bytes?
-    property reader : IO?
-    property last_modified : Time?
-    property mime : String
-
-    def initialize
-        @status = 200
-        @date = Time.utc
-        @content_length = 0_i64
-        @data = nil
-        @reader = nil
-        @last_modified = nil
-        @mime = extension_to_mime(".txt")
     end
 end
