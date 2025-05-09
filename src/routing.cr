@@ -1,5 +1,5 @@
 module Silver
-    # Some route for the router (router logic encapsulated in App class)
+    # Some route for the router
     class Route
         getter pattern : String
         getter param_names : Array(String)
