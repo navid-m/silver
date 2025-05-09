@@ -15,6 +15,7 @@ module Silver
     alias Handler = Context -> HttpResponse
 
     # The context for some request.
+    # Along with the path and parameters.
     class Context
         getter request : HttpRequest
         getter path : String
