@@ -1,7 +1,6 @@
 require "socket"
 require "option_parser"
 require "http"
-require "regex"
 require "file"
 require "log"
 require "json"
@@ -142,11 +141,11 @@ module Silver
                 first_line = reader.gets || ""
                 return {nil, false} if first_line.empty?
 
-                match = first_line.match(HEADER_REGEX)
-                return {nil, false} if match.nil?
+                parts = first_line.strip.split(" ")
+                return {nil, false} unless parts.size == 3
+                method = parts[0]
+                path = parts[1]
 
-                method = match[1]
-                path = match[2]
                 keep_alive = false
                 content_length = 0
 

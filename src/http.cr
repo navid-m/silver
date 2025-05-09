@@ -1,8 +1,6 @@
 require "mime"
 
 module Silver
-    HEADER_REGEX = /^(GET|POST|PUT|DELETE) (\/[\w\.\/]*(?:\?[\w\.\=\&\%\+\-]*)*) HTTP\/\d\.\d$/
-
     # HTTP method request type.
     enum Method
         GET

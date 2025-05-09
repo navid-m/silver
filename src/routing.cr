@@ -1,39 +1,35 @@
 module Silver
-    # Some route for the router
     class Route
         getter pattern : String
         getter param_names : Array(String)
-        getter regex : Regex
 
         def initialize(@pattern : String)
             @param_names = [] of String
-            @regex = compile_route_regex
+            @pattern.split("/").each do |part|
+                if part.starts_with?(":")
+                    @param_names << part[1..]
+                end
+            end
         end
 
         def match(path : String) : Hash(String, String)?
-            match_data = @regex.match(path)
-            return nil unless match_data
+            pattern_parts = pattern.split("/")
+            path_parts = path.split("/")
+
+            return nil unless pattern_parts.size == path_parts.size
+
             params = Hash(String, String).new
-            @param_names.each_with_index do |name, i|
-                params[name] = match_data[i + 1]
+
+            pattern_parts.zip(path_parts) do |pat_part, path_part|
+                if pat_part.starts_with?(":")
+                    param_name = pat_part[1..]
+                    params[param_name] = path_part
+                elsif pat_part != path_part
+                    return nil
+                end
             end
 
             params
-        end
-
-        private def compile_route_regex : Regex
-            parts = [] of String
-            @pattern.split("/").each do |part|
-                if part.starts_with?(":")
-                    param_name = part[1..]
-                    @param_names << param_name
-                    parts << "([^/]+)"
-                else
-                    parts << Regex.escape(part)
-                end
-            end
-            pattern_str = "^" + parts.join("/") + "$"
-            Regex.new(pattern_str)
         end
     end
 end
