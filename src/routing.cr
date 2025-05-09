@@ -10,6 +10,17 @@ module Silver
             @regex = compile_route_regex
         end
 
+        def match(path : String) : Hash(String, String)?
+            match_data = @regex.match(path)
+            return nil unless match_data
+            params = Hash(String, String).new
+            @param_names.each_with_index do |name, i|
+                params[name] = match_data[i + 1]
+            end
+
+            params
+        end
+
         private def compile_route_regex : Regex
             parts = [] of String
             @pattern.split("/").each do |part|
@@ -23,17 +34,6 @@ module Silver
             end
             pattern_str = "^" + parts.join("/") + "$"
             Regex.new(pattern_str)
-        end
-
-        def match(path : String) : Hash(String, String)?
-            match_data = @regex.match(path)
-            return nil unless match_data
-            params = Hash(String, String).new
-            @param_names.each_with_index do |name, i|
-                params[name] = match_data[i + 1]
-            end
-
-            params
         end
     end
 end
