@@ -3,7 +3,7 @@ description: "Gods web framework"
 version: 0.1.0
 targets:
    example_app:
-      main: src/example.cr
+      main: src/ex.cr
 # authors:
 #   - name <email@example.com>
 
