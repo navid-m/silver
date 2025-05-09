@@ -7,7 +7,6 @@ require "log"
 require "json"
 require "path"
 require "mime"
-require "../src/mappings"
 require "../src/http"
 require "../src/routing"
 
