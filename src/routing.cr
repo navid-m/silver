@@ -19,7 +19,6 @@ module Silver
             return nil unless pattern_parts.size == path_parts.size
 
             params = Hash(String, String).new
-
             pattern_parts.zip(path_parts) do |pat_part, path_part|
                 if pat_part.starts_with?(":")
                     param_name = pat_part[1..]
