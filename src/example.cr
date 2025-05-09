@@ -4,7 +4,8 @@ port = 8085
 app = Silver::App.new
 
 app.html(Silver::Method::GET, "/") do |ctx|
-    "<h1>Hello from Silver Web Framework</h1>"
+    query_value = ctx.query("q") || "nothing"
+    "<h1>Hello from Silver Web Framework</h1><br /><h2>q is #{query_value}"
 end
 
 app.json(Silver::Method::GET, "/json") do |ctx|
