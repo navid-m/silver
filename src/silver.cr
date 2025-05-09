@@ -1,6 +1,4 @@
 require "socket"
-require "option_parser"
-require "http"
 require "file"
 require "log"
 require "json"
