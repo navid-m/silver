@@ -168,10 +168,7 @@ module Silver
 
         def write_response(res : HttpResponse, socket : TCPSocket, keep_alive : Bool) : Bool
             begin
-                first_line = "HTTP/1.1 #{res.status} #{http_code_to_status(res.status)}\r\n"
                 headers = "Date: #{res.date.to_rfc2822}\r\n"
-
-                headers += "Server: Silver/1.0\r\n"
                 headers += "Content-Type: #{res.mime};\r\n"
                 headers += "Content-Length: #{res.content_length}\r\n"
                 headers += "Connection: #{keep_alive ? "keep-alive" : "close"}\r\n"
@@ -180,7 +177,7 @@ module Silver
                     headers += "Last-Modified: #{res.last_modified.not_nil!.to_rfc2822}\r\n"
                 end
 
-                socket.write("#{first_line}#{headers}\r\n".to_slice)
+                socket.write("HTTP/1.1 #{res.status} #{http_code_to_status(res.status)}\r\n#{headers}\r\n".to_slice)
 
                 if reader = res.reader
                     IO.copy(reader, socket, res.content_length)
